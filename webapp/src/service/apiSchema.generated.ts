@@ -510,6 +510,14 @@ export interface components {
     ComputedPermissionModel: {
       permissionModel?: components["schemas"]["PermissionModel"];
       origin: "ORGANIZATION_BASE" | "DIRECT" | "ADMIN" | "NONE";
+      /** The user permission type. (Null if uses granular permissions) */
+      type?: "NONE" | "VIEW" | "TRANSLATE" | "REVIEW" | "EDIT" | "MANAGE";
+      /**
+       * Deprecated (use translateLanguageIds).
+       *
+       * List of languages current user has TRANSLATE permission to. If null, all languages edition is permitted.
+       */
+      permittedLanguageIds?: number[];
       /** List of languages user can change state to. If null, all languages edition is permitted. */
       stateChangeLanguageIds?: number[];
       /** List of languages user can view. If null, all languages edition is permitted. */
@@ -518,12 +526,6 @@ export interface components {
       granular: boolean;
       /** List of languages user can translate to. If null, all languages edition is permitted. */
       translateLanguageIds?: number[];
-      /**
-       * Deprecated (use translateLanguageIds).
-       *
-       * List of languages current user has TRANSLATE permission to. If null, all languages edition is permitted.
-       */
-      permittedLanguageIds?: number[];
       /** Granted scopes granted to user. When user has type permissions, this field contains permission scopes of the type. */
       scopes: (
         | "translations.view"
@@ -545,8 +547,6 @@ export interface components {
         | "keys.delete"
         | "keys.create"
       )[];
-      /** The user permission type. (Null if uses granular permissions) */
-      type?: "NONE" | "VIEW" | "TRANSLATE" | "REVIEW" | "EDIT" | "MANAGE";
     };
     LanguageModel: {
       id: number;
@@ -877,12 +877,12 @@ export interface components {
     };
     RevealedPatModel: {
       token: string;
+      id: number;
+      description: string;
       createdAt: number;
       updatedAt: number;
       lastUsedAt?: number;
       expiresAt?: number;
-      id: number;
-      description: string;
     };
     SetOrganizationRoleDto: {
       roleType: "MEMBER" | "OWNER";
@@ -952,15 +952,15 @@ export interface components {
     RevealedApiKeyModel: {
       /** Resulting user's api key */
       key: string;
+      id: number;
+      userFullName?: string;
+      projectName: string;
+      description: string;
       username?: string;
       lastUsedAt?: number;
       projectId: number;
       expiresAt?: number;
-      projectName: string;
-      userFullName?: string;
       scopes: string[];
-      id: number;
-      description: string;
     };
     SuperTokenRequest: {
       /** Has to be provided when TOTP enabled */
@@ -1174,7 +1174,7 @@ export interface components {
     InitialDataModel: {
       serverConfiguration: components["schemas"]["PublicConfigurationDTO"];
       userInfo?: components["schemas"]["PrivateUserAccountModel"];
-      preferredOrganization?: components["schemas"]["OrganizationModel"];
+      preferredOrganization?: components["schemas"]["PrivateOrganizationModel"];
       languageTag?: string;
     };
     MtServiceDTO: {
@@ -1194,6 +1194,22 @@ export interface components {
       authorizationUrl?: string;
       scopes?: string[];
       enabled: boolean;
+    };
+    PrivateOrganizationModel: {
+      organizationModel?: components["schemas"]["OrganizationModel"];
+      enabledFeatures: "GRANULAR_PERMISSIONS"[];
+      name: string;
+      id: number;
+      description?: string;
+      basePermission: components["schemas"]["PermissionModel"];
+      /**
+       * The role of currently authorized user.
+       *
+       * Can be null when user has direct access to one of the projects owned by the organization.
+       */
+      currentUserRole?: "MEMBER" | "OWNER";
+      avatar?: components["schemas"]["Avatar"];
+      slug: string;
     };
     PublicBillingConfigurationDTO: {
       enabled: boolean;
@@ -1594,12 +1610,12 @@ export interface components {
     };
     PatWithUserModel: {
       user: components["schemas"]["SimpleUserAccountModel"];
+      id: number;
+      description: string;
       createdAt: number;
       updatedAt: number;
       lastUsedAt?: number;
       expiresAt?: number;
-      id: number;
-      description: string;
     };
     OrganizationRequestParamsDto: {
       filterCurrentUserOwner: boolean;
@@ -1652,15 +1668,15 @@ export interface components {
        * If null, all languages are permitted.
        */
       permittedLanguageIds?: number[];
+      id: number;
+      userFullName?: string;
+      projectName: string;
+      description: string;
       username?: string;
       lastUsedAt?: number;
       projectId: number;
       expiresAt?: number;
-      projectName: string;
-      userFullName?: string;
       scopes: string[];
-      id: number;
-      description: string;
     };
     PagedModelUserAccountModel: {
       _embedded?: {
@@ -2063,8 +2079,8 @@ export interface operations {
   setUsersPermissions: {
     parameters: {
       path: {
-        projectId: number;
         userId: number;
+        projectId: number;
       };
       query: {
         scopes?: string[];
@@ -5784,7 +5800,7 @@ export interface operations {
       /** OK */
       200: {
         content: {
-          "*/*": components["schemas"]["OrganizationModel"];
+          "*/*": components["schemas"]["PrivateOrganizationModel"];
         };
       };
       /** Bad Request */
