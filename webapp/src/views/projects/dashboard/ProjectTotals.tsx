@@ -190,7 +190,7 @@ export const ProjectTotals: React.FC<{
   const { satisfiesPermission } = useProjectPermissions();
 
   const isAdmin = satisfiesPermission('admin');
-  const canViewMembers = satisfiesPermission('users.view');
+  const canViewMembers = satisfiesPermission('members.view');
   const canEditLanguages = satisfiesPermission('languages.edit');
   const canViewKeys = satisfiesPermission('keys.view');
 

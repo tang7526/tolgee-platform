@@ -95,7 +95,10 @@ export const PermissionsAdvanced: React.FC<Props> = ({
             ],
           },
           {
-            value: 'users.view',
+            value: 'members.view',
+          },
+          {
+            value: 'members.edit',
           },
           {
             value: 'project.edit',

@@ -510,23 +510,21 @@ export interface components {
     ComputedPermissionModel: {
       permissionModel?: components["schemas"]["PermissionModel"];
       origin: "ORGANIZATION_BASE" | "DIRECT" | "ADMIN" | "NONE";
-      /** The user permission type. (Null if uses granular permissions) */
+      /** The user's permission type. This field is null if uses granular permissions */
       type?: "NONE" | "VIEW" | "TRANSLATE" | "REVIEW" | "EDIT" | "MANAGE";
+      /** List of languages user can change state to. If null, changing state of all language values is permitted. */
+      stateChangeLanguageIds?: number[];
+      /** List of languages user can view. If null, all languages view is permitted. */
+      viewLanguageIds?: number[];
+      /** List of languages user can translate to. If null, all languages editing is permitted. */
+      translateLanguageIds?: number[];
       /**
        * Deprecated (use translateLanguageIds).
        *
        * List of languages current user has TRANSLATE permission to. If null, all languages edition is permitted.
        */
       permittedLanguageIds?: number[];
-      /** List of languages user can change state to. If null, all languages edition is permitted. */
-      stateChangeLanguageIds?: number[];
-      /** List of languages user can view. If null, all languages edition is permitted. */
-      viewLanguageIds?: number[];
-      /** Has user explicitly set granular permissions? */
-      granular: boolean;
-      /** List of languages user can translate to. If null, all languages edition is permitted. */
-      translateLanguageIds?: number[];
-      /** Granted scopes granted to user. When user has type permissions, this field contains permission scopes of the type. */
+      /** Granted scopes to the user. When user has type permissions, this field contains permission scopes of the type. */
       scopes: (
         | "translations.view"
         | "translations.edit"
@@ -538,7 +536,8 @@ export interface components {
         | "languages.edit"
         | "admin"
         | "project.edit"
-        | "users.view"
+        | "members.view"
+        | "members.edit"
         | "translation-comments.add"
         | "translation-comments.edit"
         | "translation-comments.set-state"
@@ -563,7 +562,7 @@ export interface components {
     };
     /** Current user's direct permission */
     PermissionModel: {
-      /** Granted scopes granted to user. When user has type permissions, this field contains permission scopes of the type. */
+      /** Granted scopes to the user. When user has type permissions, this field contains permission scopes of the type. */
       scopes: (
         | "translations.view"
         | "translations.edit"
@@ -575,7 +574,8 @@ export interface components {
         | "languages.edit"
         | "admin"
         | "project.edit"
-        | "users.view"
+        | "members.view"
+        | "members.edit"
         | "translation-comments.add"
         | "translation-comments.edit"
         | "translation-comments.set-state"
@@ -584,7 +584,7 @@ export interface components {
         | "keys.delete"
         | "keys.create"
       )[];
-      /** The user permission type. (Null if uses granular permissions) */
+      /** The user's permission type. This field is null if uses granular permissions */
       type?: "NONE" | "VIEW" | "TRANSLATE" | "REVIEW" | "EDIT" | "MANAGE";
       /**
        * Deprecated (use translateLanguageIds).
@@ -592,14 +592,12 @@ export interface components {
        * List of languages current user has TRANSLATE permission to. If null, all languages edition is permitted.
        */
       permittedLanguageIds?: number[];
-      /** List of languages user can translate to. If null, all languages edition is permitted. */
+      /** List of languages user can translate to. If null, all languages editing is permitted. */
       translateLanguageIds?: number[];
-      /** List of languages user can view. If null, all languages edition is permitted. */
+      /** List of languages user can view. If null, all languages view is permitted. */
       viewLanguageIds?: number[];
-      /** List of languages user can change state to. If null, all languages edition is permitted. */
+      /** List of languages user can change state to. If null, changing state of all language values is permitted. */
       stateChangeLanguageIds?: number[];
-      /** Has user explicitly set granular permissions? */
-      granular: boolean;
     };
     ProjectModel: {
       id: number;
@@ -773,7 +771,8 @@ export interface components {
         | "languages.edit"
         | "admin"
         | "project.edit"
-        | "users.view"
+        | "members.view"
+        | "members.edit"
         | "translation-comments.add"
         | "translation-comments.edit"
         | "translation-comments.set-state"
@@ -897,7 +896,7 @@ export interface components {
       name: string;
       slug: string;
       description?: string;
-      basePermission: components["schemas"]["PermissionModel"];
+      basePermissions: components["schemas"]["PermissionModel"];
       /**
        * The role of currently authorized user.
        *
@@ -953,13 +952,13 @@ export interface components {
       /** Resulting user's api key */
       key: string;
       id: number;
-      userFullName?: string;
-      projectName: string;
       description: string;
       username?: string;
       lastUsedAt?: number;
       projectId: number;
       expiresAt?: number;
+      userFullName?: string;
+      projectName: string;
       scopes: string[];
     };
     SuperTokenRequest: {
@@ -1156,7 +1155,8 @@ export interface components {
         | "languages.edit"
         | "admin"
         | "project.edit"
-        | "users.view"
+        | "members.view"
+        | "members.edit"
         | "translation-comments.add"
         | "translation-comments.edit"
         | "translation-comments.set-state"
@@ -1201,13 +1201,13 @@ export interface components {
       name: string;
       id: number;
       description?: string;
-      basePermission: components["schemas"]["PermissionModel"];
       /**
        * The role of currently authorized user.
        *
        * Can be null when user has direct access to one of the projects owned by the organization.
        */
       currentUserRole?: "MEMBER" | "OWNER";
+      basePermissions: components["schemas"]["PermissionModel"];
       avatar?: components["schemas"]["Avatar"];
       slug: string;
     };
@@ -1388,6 +1388,7 @@ export interface components {
       page?: components["schemas"]["PageMetadata"];
     };
     EntityModelImportFileIssueView: {
+      params: components["schemas"]["ImportFileIssueParamView"][];
       id: number;
       type:
         | "KEY_IS_NOT_STRING"
@@ -1399,7 +1400,6 @@ export interface components {
         | "ID_ATTRIBUTE_NOT_PROVIDED"
         | "TARGET_NOT_PROVIDED"
         | "TRANSLATION_TOO_LONG";
-      params: components["schemas"]["ImportFileIssueParamView"][];
     };
     ImportFileIssueParamView: {
       value?: string;
@@ -1669,13 +1669,13 @@ export interface components {
        */
       permittedLanguageIds?: number[];
       id: number;
-      userFullName?: string;
-      projectName: string;
       description: string;
       username?: string;
       lastUsedAt?: number;
       projectId: number;
       expiresAt?: number;
+      userFullName?: string;
+      projectName: string;
       scopes: string[];
     };
     PagedModelUserAccountModel: {
@@ -4949,7 +4949,8 @@ export interface operations {
               | "languages.edit"
               | "admin"
               | "project.edit"
-              | "users.view"
+              | "members.view"
+              | "members.edit"
               | "translation-comments.add"
               | "translation-comments.edit"
               | "translation-comments.set-state"
