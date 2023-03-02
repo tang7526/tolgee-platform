@@ -1,16 +1,19 @@
 package io.tolgee.development.testDataBuilder.data
 
 import io.tolgee.constants.MtServiceType
+import io.tolgee.development.testDataBuilder.builders.KeyBuilder
 import io.tolgee.development.testDataBuilder.builders.ProjectBuilder
 import io.tolgee.development.testDataBuilder.builders.TestDataBuilder
 import io.tolgee.model.Language
 import io.tolgee.model.Permission
 import io.tolgee.model.Project
+import io.tolgee.model.Screenshot
 import io.tolgee.model.UserAccount
 import io.tolgee.model.enums.TranslationCommentState
 import io.tolgee.model.enums.TranslationState
 import io.tolgee.model.key.Key
 import io.tolgee.model.key.Tag
+import io.tolgee.model.key.screenshotReference.KeyInScreenshotPosition
 import io.tolgee.model.translation.Translation
 
 class TranslationsTestData {
@@ -166,18 +169,34 @@ class TranslationsTestData {
     }
   }
 
+  fun addSentenceKey(): KeyBuilder {
+    return projectBuilder.addKey {
+      name = "How strong of a variation to produce. At 0, " +
+        "there will be no effect. At 1, you will get the " +
+        "complete picture with variation seed (except for ancestral " +
+        "samplers, where you will just get something)."
+    }
+  }
+
   fun addKeysWithScreenshots() {
+    var screenshot1: Screenshot? = null
+
     projectBuilder.addKey {
       name = "key with screenshot"
     }.build {
-      addScreenshot {}
+      screenshot1 = addScreenshot {}.self
       addScreenshot {}
     }
     projectBuilder.addKey {
       name = "key with screenshot 2"
     }.build {
       addScreenshot {}
-      addScreenshot {}
+      projectBuilder.addScreenshotReference {
+        screenshot = screenshot1!!
+        key = this@build.self
+        originalText = "Oh yeah"
+        positions = mutableListOf(KeyInScreenshotPosition(100, 100, 50, 50))
+      }
     }
   }
 

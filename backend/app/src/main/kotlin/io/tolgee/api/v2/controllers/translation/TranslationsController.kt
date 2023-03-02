@@ -50,6 +50,7 @@ import io.tolgee.service.query_builders.CursorUtil
 import io.tolgee.service.security.SecurityService
 import io.tolgee.service.translation.TranslationService
 import org.springdoc.api.annotations.ParameterObject
+import org.springframework.beans.propertyeditors.CustomCollectionEditor
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
@@ -58,8 +59,11 @@ import org.springframework.data.web.SortDefault
 import org.springframework.hateoas.PagedModel
 import org.springframework.http.CacheControl
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.WebDataBinder
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.InitBinder
+import org.springframework.web.bind.annotation.ModelAttribute
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
@@ -220,12 +224,21 @@ When null, resulting file will be a flat key-value object.
     return translationModelAssembler.toModel(translationService.setState(translation, state))
   }
 
+  @InitBinder("translationFilters")
+  fun customizeBinding(binder: WebDataBinder) {
+    binder.registerCustomEditor(
+      List::class.java,
+      TranslationFilters::filterKeyName.name,
+      CustomCollectionEditor(List::class.java)
+    )
+  }
+
   @GetMapping(value = [""])
   @AccessWithApiKey([ApiScope.TRANSLATIONS_VIEW])
   @AccessWithProjectPermission(Permission.ProjectPermissionType.VIEW)
   @Operation(summary = "Returns translations in project")
   fun getTranslations(
-    @ParameterObject params: GetTranslationsParams,
+    @ParameterObject @ModelAttribute("translationFilters") params: GetTranslationsParams,
     @ParameterObject pageable: Pageable
   ): KeysWithTranslationsPageModel {
 
@@ -235,7 +248,7 @@ When null, resulting file will be a flat key-value object.
     val pageableWithSort = getSafeSortPageable(pageable)
     val data = translationService.getViewData(projectHolder.project.id, pageableWithSort, params, languages)
 
-    val keysWithScreenshots = getKeysWithScreenshots(data.map { it.keyId }.toList())
+    val keysWithScreenshots = getScreenshots(data.map { it.keyId }.toList())
 
     if (keysWithScreenshots != null) {
       data.content.forEach { it.screenshots = keysWithScreenshots[it.keyId] ?: listOf() }
@@ -250,7 +263,7 @@ When null, resulting file will be a flat key-value object.
   @AccessWithProjectPermission(Permission.ProjectPermissionType.VIEW)
   @Operation(summary = "Get select all keys")
   fun getSelectAllKeyIds(
-    @ParameterObject params: TranslationFilters,
+    @ParameterObject @ModelAttribute("translationFilters") params: TranslationFilters,
   ): SelectAllResponse {
     val languages: Set<Language> = languageService
       .getLanguagesForTranslationsView(params.languages, projectHolder.project.id)
@@ -311,12 +324,12 @@ Sorting is not supported for supported. It is automatically sorted from newest t
     return historyPagedAssembler.toModel(translations, historyModelAssembler)
   }
 
-  private fun getKeysWithScreenshots(keyIds: Collection<Long>): Map<Long, MutableSet<Screenshot>>? {
+  private fun getScreenshots(keyIds: Collection<Long>): Map<Long, List<Screenshot>>? {
     if (
       !authenticationFacade.isApiKeyAuthentication ||
       authenticationFacade.apiKey.scopesEnum.contains(ApiScope.SCREENSHOTS_VIEW)
     ) {
-      return screenshotService.getKeysWithScreenshots(keyIds).associate { it.id to it.screenshots }
+      return screenshotService.getScreenshotsForKeys(keyIds)
     }
     return null
   }

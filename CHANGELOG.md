@@ -1,3 +1,30 @@
+# [3.8.0](https://github.com/tolgee/tolgee-platform/compare/v3.7.2...v3.8.0) (2023-02-28)
+
+
+### Bug Fixes
+
+* Ignore commas in keyName filter ([#1586](https://github.com/tolgee/tolgee-platform/issues/1586)) ([eb38575](https://github.com/tolgee/tolgee-platform/commit/eb3857595924ab8502b6ef843bee0a0e2110cc99))
+* Slow key search ([#1590](https://github.com/tolgee/tolgee-platform/issues/1590)) ([077fa57](https://github.com/tolgee/tolgee-platform/commit/077fa5775a3222a74f79c47563cb3fdda574bea4))
+
+
+### Features
+
+* Fixtures for Figma plugin ([#1511](https://github.com/tolgee/tolgee-platform/issues/1511)) ([4b6fe71](https://github.com/tolgee/tolgee-platform/commit/4b6fe71b7937732e034d5cfd77ec36c33e95114a))
+
+## [3.7.2](https://github.com/tolgee/tolgee-platform/compare/v3.7.1...v3.7.2) (2023-02-24)
+
+
+### Bug Fixes
+
+* release with translations ([#1584](https://github.com/tolgee/tolgee-platform/issues/1584)) ([4eb0640](https://github.com/tolgee/tolgee-platform/commit/4eb064032b0b954f76f15329d1f87b3ce649715e))
+
+## [3.7.1](https://github.com/tolgee/tolgee-platform/compare/v3.7.0...v3.7.1) (2023-02-24)
+
+
+### Bug Fixes
+
+* remove nested structure selector for xliff ([#1583](https://github.com/tolgee/tolgee-platform/issues/1583)) ([a3353d2](https://github.com/tolgee/tolgee-platform/commit/a3353d22aa773e91ba006cee46b152144c280299))
+
 # [3.7.0](https://github.com/tolgee/tolgee-platform/compare/v3.6.1...v3.7.0) (2023-02-23)
 
 
