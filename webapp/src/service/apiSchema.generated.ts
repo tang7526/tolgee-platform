@@ -177,6 +177,9 @@ export interface paths {
     put: operations["uploadAvatar_2"];
     delete: operations["removeAvatar_2"];
   };
+  "/v2/ee-license/set-license-key": {
+    put: operations["setLicenseKey"];
+  };
   "/v2/api-keys/{apiKeyId}": {
     put: operations["update_6"];
     delete: operations["delete_10"];
@@ -198,6 +201,15 @@ export interface paths {
   };
   "/v2/public/licensing/subscription": {
     post: operations["getMySubscription"];
+  };
+  "/v2/public/licensing/set-key": {
+    post: operations["onLicenceSetKey"];
+  };
+  "/v2/public/licensing/report-usage": {
+    post: operations["reportUsage"];
+  };
+  "/v2/public/licensing/prepare-set-key": {
+    post: operations["prepareSetLicenseKey"];
   };
   "/v2/projects": {
     get: operations["getAll"];
@@ -261,6 +273,9 @@ export interface paths {
   };
   "/v2/image-upload": {
     post: operations["upload"];
+  };
+  "/v2/ee-license/prepare-set-license-key": {
+    post: operations["prepareSetLicenseKey_1"];
   };
   "/v2/api-keys": {
     get: operations["allByUser"];
@@ -416,6 +431,9 @@ export interface paths {
   "/v2/invitations/{code}/accept": {
     get: operations["acceptInvitation"];
   };
+  "/v2/ee-license/info": {
+    get: operations["getInfo_3"];
+  };
   "/v2/api-keys/{keyId}": {
     get: operations["get_10"];
   };
@@ -522,18 +540,8 @@ export interface components {
     ComputedPermissionModel: {
       permissionModel?: components["schemas"]["PermissionModel"];
       origin: "ORGANIZATION_BASE" | "DIRECT" | "ADMIN" | "NONE";
-      /**
-       * Deprecated (use translateLanguageIds).
-       *
-       * List of languages current user has TRANSLATE permission to. If null, all languages edition is permitted.
-       */
-      permittedLanguageIds?: number[];
-      /** List of languages user can translate to. If null, all languages editing is permitted. */
-      translateLanguageIds?: number[];
-      /** List of languages user can change state to. If null, changing state of all language values is permitted. */
-      stateChangeLanguageIds?: number[];
-      /** List of languages user can view. If null, all languages view is permitted. */
-      viewLanguageIds?: number[];
+      /** The user's permission type. This field is null if uses granular permissions */
+      type?: "NONE" | "VIEW" | "TRANSLATE" | "REVIEW" | "EDIT" | "MANAGE";
       /** Granted scopes to the user. When user has type permissions, this field contains permission scopes of the type. */
       scopes: (
         | "translations.view"
@@ -556,8 +564,18 @@ export interface components {
         | "keys.delete"
         | "keys.create"
       )[];
-      /** The user's permission type. This field is null if uses granular permissions */
-      type?: "NONE" | "VIEW" | "TRANSLATE" | "REVIEW" | "EDIT" | "MANAGE";
+      /** List of languages user can change state to. If null, changing state of all language values is permitted. */
+      stateChangeLanguageIds?: number[];
+      /** List of languages user can view. If null, all languages view is permitted. */
+      viewLanguageIds?: number[];
+      /** List of languages user can translate to. If null, all languages editing is permitted. */
+      translateLanguageIds?: number[];
+      /**
+       * Deprecated (use translateLanguageIds).
+       *
+       * List of languages current user has TRANSLATE permission to. If null, all languages edition is permitted.
+       */
+      permittedLanguageIds?: number[];
     };
     LanguageModel: {
       id: number;
@@ -918,11 +936,11 @@ export interface components {
     };
     RevealedPatModel: {
       token: string;
-      expiresAt?: number;
-      lastUsedAt?: number;
+      id: number;
       createdAt: number;
       updatedAt: number;
-      id: number;
+      lastUsedAt?: number;
+      expiresAt?: number;
       description: string;
     };
     SetOrganizationRoleDto: {
@@ -962,6 +980,16 @@ export interface components {
       invitedUserName?: string;
       invitedUserEmail?: string;
     };
+    SetLicenseKeyDto: {
+      licenseKey: string;
+    };
+    EeUsageModel: {
+      enabledFeatures: "GRANULAR_PERMISSIONS"[];
+      currentPeriodEnd?: number;
+      cancelAtPeriodEnd: boolean;
+      currentUserCount: number;
+      userLimit: number;
+    };
     V2EditApiKeyDto: {
       scopes: string[];
       description?: string;
@@ -993,14 +1021,14 @@ export interface components {
     RevealedApiKeyModel: {
       /** Resulting user's api key */
       key: string;
-      projectName: string;
-      userFullName?: string;
+      id: number;
+      scopes: string[];
       username?: string;
+      lastUsedAt?: number;
       projectId: number;
       expiresAt?: number;
-      lastUsedAt?: number;
-      scopes: string[];
-      id: number;
+      projectName: string;
+      userFullName?: string;
       description: string;
     };
     SuperTokenRequest: {
@@ -1014,13 +1042,35 @@ export interface components {
       oldSlug?: string;
     };
     GetMySubscriptionDto: {
-      licenceKey: string;
+      licenseKey: string;
     };
-    EeSubscriptionModel: {
-      id?: number;
-      enabledFeatures?: "GRANULAR_PERMISSIONS"[];
+    SelfHostedEePlanModel: {
+      name: string;
+      public: boolean;
+      enabledFeatures: "GRANULAR_PERMISSIONS"[];
+      includedSeats: number;
+      pricePerSeat: number;
+    };
+    SelfHostedEeSubscriptionModel: {
+      enabledFeatures: "GRANULAR_PERMISSIONS"[];
       currentPeriodEnd?: number;
       cancelAtPeriodEnd: boolean;
+      plan: components["schemas"]["SelfHostedEePlanModel"];
+    };
+    SetLicenseKeyLicensingDto: {
+      licenseKey: string;
+      seats: number;
+    };
+    ReportUsageDto: {
+      licenseKey: string;
+      seats: number;
+    };
+    PrepareSetEeLicenceKeyModel: {
+      pricePerSeatMonthly: number;
+      daysUntilPeriodEnd: number;
+      pricePerSeatDaily: number;
+      estimatedTotalThisPeriod: number;
+      seatCount: number;
     };
     CreateProjectDTO: {
       name: string;
@@ -1308,17 +1358,17 @@ export interface components {
     PrivateOrganizationModel: {
       organizationModel?: components["schemas"]["OrganizationModel"];
       enabledFeatures: "GRANULAR_PERMISSIONS"[];
-      basePermissions: components["schemas"]["PermissionModel"];
+      name: string;
+      id: number;
+      avatar?: components["schemas"]["Avatar"];
+      slug: string;
       /**
        * The role of currently authorized user.
        *
        * Can be null when user has direct access to one of the projects owned by the organization.
        */
       currentUserRole?: "MEMBER" | "OWNER";
-      avatar?: components["schemas"]["Avatar"];
-      slug: string;
-      name: string;
-      id: number;
+      basePermissions: components["schemas"]["PermissionModel"];
       description?: string;
     };
     PublicBillingConfigurationDTO: {
@@ -1395,19 +1445,19 @@ export interface components {
       extraCreditBalance: number;
     };
     KeySearchResultView: {
-      baseTranslation?: string;
-      translation?: string;
-      namespace?: string;
       name: string;
       id: number;
+      translation?: string;
+      namespace?: string;
+      baseTranslation?: string;
     };
     KeySearchSearchResultModel: {
       view?: components["schemas"]["KeySearchResultView"];
-      baseTranslation?: string;
-      translation?: string;
-      namespace?: string;
       name: string;
       id: number;
+      translation?: string;
+      namespace?: string;
+      baseTranslation?: string;
     };
     PagedModelKeySearchSearchResultModel: {
       _embedded?: {
@@ -1741,11 +1791,11 @@ export interface components {
     };
     PatWithUserModel: {
       user: components["schemas"]["SimpleUserAccountModel"];
-      expiresAt?: number;
-      lastUsedAt?: number;
+      id: number;
       createdAt: number;
       updatedAt: number;
-      id: number;
+      lastUsedAt?: number;
+      expiresAt?: number;
       description: string;
     };
     OrganizationRequestParamsDto: {
@@ -1799,14 +1849,14 @@ export interface components {
        * If null, all languages are permitted.
        */
       permittedLanguageIds?: number[];
-      projectName: string;
-      userFullName?: string;
+      id: number;
+      scopes: string[];
       username?: string;
+      lastUsedAt?: number;
       projectId: number;
       expiresAt?: number;
-      lastUsedAt?: number;
-      scopes: string[];
-      id: number;
+      projectName: string;
+      userFullName?: string;
       description: string;
     };
     PagedModelUserAccountModel: {
@@ -3766,6 +3816,33 @@ export interface operations {
       };
     };
   };
+  setLicenseKey: {
+    responses: {
+      /** OK */
+      200: {
+        content: {
+          "*/*": components["schemas"]["EeUsageModel"];
+        };
+      };
+      /** Bad Request */
+      400: {
+        content: {
+          "*/*": string;
+        };
+      };
+      /** Not Found */
+      404: {
+        content: {
+          "*/*": string;
+        };
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SetLicenseKeyDto"];
+      };
+    };
+  };
   update_6: {
     parameters: {
       path: {
@@ -3959,16 +4036,11 @@ export interface operations {
     };
   };
   getMySubscription: {
-    parameters: {
-      query: {
-        body: components["schemas"]["GetMySubscriptionDto"];
-      };
-    };
     responses: {
       /** OK */
       200: {
         content: {
-          "*/*": components["schemas"]["EeSubscriptionModel"];
+          "*/*": components["schemas"]["SelfHostedEeSubscriptionModel"];
         };
       };
       /** Bad Request */
@@ -3982,6 +4054,88 @@ export interface operations {
         content: {
           "*/*": string;
         };
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["GetMySubscriptionDto"];
+      };
+    };
+  };
+  onLicenceSetKey: {
+    responses: {
+      /** OK */
+      200: {
+        content: {
+          "*/*": components["schemas"]["SelfHostedEeSubscriptionModel"];
+        };
+      };
+      /** Bad Request */
+      400: {
+        content: {
+          "*/*": string;
+        };
+      };
+      /** Not Found */
+      404: {
+        content: {
+          "*/*": string;
+        };
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SetLicenseKeyLicensingDto"];
+      };
+    };
+  };
+  reportUsage: {
+    responses: {
+      /** OK */
+      200: unknown;
+      /** Bad Request */
+      400: {
+        content: {
+          "*/*": string;
+        };
+      };
+      /** Not Found */
+      404: {
+        content: {
+          "*/*": string;
+        };
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReportUsageDto"];
+      };
+    };
+  };
+  prepareSetLicenseKey: {
+    responses: {
+      /** OK */
+      200: {
+        content: {
+          "*/*": components["schemas"]["PrepareSetEeLicenceKeyModel"];
+        };
+      };
+      /** Bad Request */
+      400: {
+        content: {
+          "*/*": string;
+        };
+      };
+      /** Not Found */
+      404: {
+        content: {
+          "*/*": string;
+        };
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SetLicenseKeyLicensingDto"];
       };
     };
   };
@@ -4873,6 +5027,33 @@ export interface operations {
           image: string;
           info?: components["schemas"]["ImageUploadInfoDto"];
         };
+      };
+    };
+  };
+  prepareSetLicenseKey_1: {
+    responses: {
+      /** OK */
+      200: {
+        content: {
+          "*/*": components["schemas"]["PrepareSetEeLicenceKeyModel"];
+        };
+      };
+      /** Bad Request */
+      400: {
+        content: {
+          "*/*": string;
+        };
+      };
+      /** Not Found */
+      404: {
+        content: {
+          "*/*": string;
+        };
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SetLicenseKeyDto"];
       };
     };
   };
@@ -6401,6 +6582,28 @@ export interface operations {
     responses: {
       /** OK */
       200: unknown;
+      /** Bad Request */
+      400: {
+        content: {
+          "*/*": string;
+        };
+      };
+      /** Not Found */
+      404: {
+        content: {
+          "*/*": string;
+        };
+      };
+    };
+  };
+  getInfo_3: {
+    responses: {
+      /** OK */
+      200: {
+        content: {
+          "*/*": components["schemas"]["EeUsageModel"];
+        };
+      };
       /** Bad Request */
       400: {
         content: {
