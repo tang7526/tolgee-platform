@@ -10,22 +10,24 @@ bin
 server.iml
 trace.db
 
-webapp/node_modules/
-webapp/lib
+#webapp/node_modules/
+#webapp/lib
 webapp/dist
 **/*.iml
-webapp/.env.dev
+#webapp/.env.dev
 e2e/cypress/videos
 e2e/cypress/screenshots
 e2e/cypress/downloads
 e2e/node_modules
 e2e/cypress/integration/examples/
-.gradle
+# .gradle
 
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/webapp/node_modules
+#/webapp/node_modules
+/webapp/node_modules/.bin
+/webapp/node_modules/.cache
 /webapp/.pnp
 /webapp/.pnp.js
 
@@ -37,10 +39,10 @@ e2e/cypress/integration/examples/
 
 # misc
 /webapp/.DS_Store
-/webapp/.env.local
-/webapp/.env.development.local
-/webapp/.env.test.local
-/webapp/.env.production.local
+#/webapp/.env.local
+#/webapp/.env.development.local
+#/webapp/.env.test.local
+#/webapp/.env.production.local
 
 /webapp/npm-debug.log*
 /webapp/yarn-debug.log*
